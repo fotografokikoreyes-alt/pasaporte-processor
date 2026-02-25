@@ -42,38 +42,35 @@ app.post("/process", async (req, res) => {
 
     const noBgBuffer = Buffer.from(bgResponse.data);
 
-    const image = sharp(noBgBuffer);
-    const metadata = await image.metadata();
-
-    const whiteBackground = sharp({
-      create: {
-        width: metadata.width,
-        height: metadata.height,
-        channels: 3,
-        background: { r: 255, g: 255, b: 255 }
-      }
-    });
-
-    const finalImage = await whiteBackground
-      .composite([{ input: noBgBuffer }])
-      .modulate({
-        brightness: 1.03,
-        saturation: 0.98
+    const processedImage = await sharp(noBgBuffer)
+      .rotate()
+      .resize(354, 472, {
+        fit: "cover",
+        position: "centre"
       })
-      .linear(1.1, -5)
-      .recomb([
-        [0.97, 0, 0],
-        [0, 1.0, 0],
-        [0, 0, 1.02]
-      ])
-      .sharpen({ sigma: 1.2 })
+      .modulate({
+        brightness: 1.05,
+        saturation: 1.03
+      })
+      .linear(1.08, -8)
+      .sharpen({
+        sigma: 1.1,
+        m1: 1,
+        m2: 2,
+        x1: 2,
+        y2: 10,
+        y3: 20
+      })
       .jpeg({
-        quality: 92,
+        quality: 95,
         chromaSubsampling: "4:4:4"
+      })
+      .withMetadata({
+        density: 300
       })
       .toBuffer();
 
-    const base64 = finalImage.toString("base64");
+    const base64 = processedImage.toString("base64");
 
     res.json({
       success: true,
